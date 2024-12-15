@@ -1,24 +1,33 @@
-function Intensity = Lab3_GetOneAve(parentFolder)
+% 获得一个工况（文件夹）下每张图片的Intensity值
+% 
+% Input: parentFolder: 父文件夹路径，e.g. ./Raw/20/
+% 
+% Output: Intensity: 平均强度值，imageIntensity: 每张图片的强度值，imageStack: 图像堆栈
+
+function [Intensity, imageIntensity, imageStack] = Lab3_GetOneAve(parentFolder, varargin)
+
+	% Parse the Input
+	p = inputParser;
+	addParameter(p, 'showfigure', false, @islogical);
+	parse(p, varargin{:});
+	showfigure = p.Results.showfigure;
 
 	% 获取所有子文件夹的信息
 	subFolders = dir(parentFolder);
 	subFolders = subFolders([subFolders.isdir]); % 仅保留文件夹
 	
-	
 	% 初始化图像堆栈
 	imageStack = [];
+	imageIntensity = [];
 	
 	% 遍历所有子文件夹
 	for i = 1:length(subFolders)
-		% 跳过 . 和 .. 文件夹
 		if strcmp(subFolders(i).name, '.') || strcmp(subFolders(i).name, '..')
 			continue;
 		end
 		
-		% 获取子文件夹的路径
+		% 文件夹下还有一个子文件夹
 		subFolderPath = fullfile(parentFolder, subFolders(i).name);
-		
-		% 获取子文件夹中的所有tif文件的信息
 		tifFiles = dir(fullfile(subFolderPath, '*.tif'));
 		
 		% 读取所有tif文件
@@ -35,15 +44,18 @@ function Intensity = Lab3_GetOneAve(parentFolder)
 			
 			% 将过滤后的图像添加到堆栈中
 			imageStack = cat(3, imageStack, filteredImg);
+			imageIntensity = cat(1, imageIntensity, mean(filteredImg, 'all'));
 		end
 	end
 	
 	denoisedImage = mean(imageStack, 3);
-	% figure;
-	% imshow(denoisedImage, []);
-	% title('降噪后的图像');
-	
 	Intensity = mean(denoisedImage, 'all');
 	fprintf('平均强度值为：%f\n', Intensity);
+
+	if showfigure
+		figure;
+		imshow(denoisedImage, []);
+		title('Denoised Image');
+	end
 
 end
